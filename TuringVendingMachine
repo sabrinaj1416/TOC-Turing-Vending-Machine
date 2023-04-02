@@ -1,0 +1,118 @@
+package model;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+public class TuringVendingMachine {
+    private char[] tape;
+    private int head;
+    private Set<Integer> states;
+    private int currentState;
+    private int coinBalance;
+    private Map<String, Items> items;
+    private Map<Character, Integer> coins;
+
+    public TuringVendingMachine(char[] tape, int head, int[] states, Map<Character, Integer> coins, Map<String, Items> items) {
+        this.tape = tape;
+        this.head = head;
+        this.states = new HashSet<Integer>();
+        for (int state : states) {
+            this.states.add(state);
+        }
+        this.currentState = states[0];
+        this.coinBalance = 0;
+        this.coins = coins;
+        this.items = items;
+    }
+
+    public void run(int[][] program) {
+        while (states.contains(currentState)) {
+            int[] instruction = program[currentState];
+            int register = instruction[0];
+            char symbol = (char) instruction[1];
+            int nextState = instruction[2];
+            int move = instruction[3];
+
+            tape[head] = symbol;
+            currentState = nextState;
+            head += move;
+
+            if (register >= 0) {
+                if (move < 0) {
+                    tape[head] = (char) (register % 10 + '0');
+                    register /= 10;
+                    head--;
+                } else {
+                    tape[head] = (char) (register % 10 + '0');
+                    register /= 10;
+                    head++;
+                }
+            }
+
+            if (head < 0) {
+                char[] newTape = new char[tape.length * 2];
+                Arrays.fill(newTape, ' ');
+                System.arraycopy(tape, 0, newTape, tape.length - head, tape.length);
+                head += tape.length;
+                tape = newTape;
+            } else if (head >= tape.length) {
+                char[] newTape = new char[tape.length * 2];
+                Arrays.fill(newTape, ' ');
+                System.arraycopy(tape, 0, newTape, 0, tape.length);
+                tape = newTape;
+            }
+        }
+    }
+
+    public String processInput(String input) {
+        // Check if input is valid
+        if (!isValidInput(input)) {
+            return "Invalid input. Please try again.";
+        }
+
+        // Parse input
+        int coinTotal = parseCoins(input.substring(0, input.length() - 1));
+        String itemCode = input.substring(input.length() - 1);
+
+        // Check if item is in stock
+        if (!isItemInStock(itemCode)) {
+            return "Sorry, " + items.get(itemCode).getName() + " is out of stock.";
+        }
+		return itemCode;
+    }
+
+   //not done yet
+	private boolean isValidInput(String input) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	private int parseCoins(String substring) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	private boolean isItemInStock(String itemCode) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	public char[] getTape() {
+        return tape;
+    }
+
+    public int getHead() {
+        return head;
+    }
+
+    public Set<Integer> getStates() {
+        return states;
+    }
+
+    public int getCurrentState() {
+        return currentState;
+    }
+}
+    
