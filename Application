@@ -1,0 +1,50 @@
+package model;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+
+public class Application extends JFrame {
+
+    private TuringVendingMachine vendingMachine;
+
+    private JLabel messageLabel;
+    private JTextField inputField;
+    private JButton submitButton;
+
+    public Application() {
+        // Create vending machine object
+        TuringVendingMachine vm = new TuringVendingMachine(); //getting error here
+
+        // Set up GUI components
+        messageLabel = new JLabel("Enter coins and item codes:");
+        inputField = new JTextField(20);
+        submitButton = new JButton("Submit");
+
+        // Add event listener to submit button
+        submitButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                String input = inputField.getText();
+                String output = vendingMachine.processInput(input);
+                JOptionPane.showMessageDialog(null, output);
+                inputField.setText("");
+            }
+        });
+
+        // Add components to JFrame
+        JPanel panel = new JPanel(new FlowLayout());
+        panel.add(messageLabel);
+        panel.add(inputField);
+        panel.add(submitButton);
+
+        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        this.setSize(400, 100);
+        this.setTitle("Vending Machine");
+        this.add(panel);
+        this.setVisible(true);
+    }
+
+    public static void main(String[] args) {
+        Application app = new Application();
+    }
+}
