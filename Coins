@@ -1,0 +1,35 @@
+package model;
+public class Coins {
+    private String name;
+    private int value;
+    private int count;
+    
+    public Coins(String name, int value, int count) {
+        this.name = name;
+        this.value = value;
+        this.count = count;
+    }
+    
+    public String getName() {
+        return name;
+    }
+    
+    public int getValue() {
+        return value;
+    }
+    
+    public int getCount() {
+        return count;
+    }
+    
+    public void setCount(int count) {
+        this.count = count;
+    }
+    
+    public void print() {
+        System.out.println("Coin name: " + name);
+        System.out.println("Coin value: " + value);
+        System.out.println("Coin count: " + count);
+    }
+}
+
