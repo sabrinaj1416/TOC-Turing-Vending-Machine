@@ -1,50 +1,171 @@
-package model;
+package main;
 
-import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import javax.swing.*;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 
-public class Application extends JFrame {
+public class VendingMachineGUI extends JFrame implements ActionListener {
+    private JLabel title;
+    private JButton insertCoin, dispenseItem, showItems, done;
+    private JTextArea itemsAvailable;
+    private int totalCoins = 0;
+    private int napkins = 20, knives = 20, forks = 20, spoons = 20;
 
-    private TuringVendingMachine vendingMachine;
+    public VendingMachineGUI() {
+        super("Vending Machine");
 
-    private JLabel messageLabel;
-    private JTextField inputField;
-    private JButton submitButton;
+        // set up the GUI components
+        title = new JLabel("Vending Machine");
+        title.setFont(new Font("Arial", Font.BOLD, 24));
+        title.setHorizontalAlignment(SwingConstants.CENTER);
+        getContentPane().add(title, BorderLayout.NORTH);
 
-    public Application() {
-        // Create vending machine object
-        TuringVendingMachine vm = new TuringVendingMachine(); //getting error here
+        insertCoin = new JButton("Insert Coin");
+        insertCoin.addActionListener(this);
+        dispenseItem = new JButton("Dispense Item");
+        dispenseItem.addActionListener(this);
+        showItems = new JButton("Show Available Items");
+        showItems.addActionListener(this);
 
-        // Set up GUI components
-        messageLabel = new JLabel("Enter coins and item codes:");
-        inputField = new JTextField(20);
-        submitButton = new JButton("Submit");
+        JPanel buttonsPanel = new JPanel(new GridLayout(1, 3));
+        buttonsPanel.add(insertCoin);
+        buttonsPanel.add(dispenseItem);
+        buttonsPanel.add(showItems);
+        getContentPane().add(buttonsPanel, BorderLayout.CENTER);
 
-        // Add event listener to submit button
-        submitButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                String input = inputField.getText();
-                String output = vendingMachine.processInput(input);
-                JOptionPane.showMessageDialog(null, output);
-                inputField.setText("");
+        itemsAvailable = new JTextArea(10, 20);
+        itemsAvailable.setEditable(false);
+        JScrollPane scrollPane = new JScrollPane(itemsAvailable);
+        getContentPane().add(scrollPane, BorderLayout.SOUTH);
+        
+        done = new JButton("Done");
+        done.addActionListener(this);
+        done.setVisible(false);
+        getContentPane().add(done, BorderLayout.EAST);
+
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(400, 300);
+        setVisible(true);
+        
+        
+    }
+    
+    public void actionPerformed(ActionEvent e) {
+        if (e.getSource() == insertCoin) {
+            String input = JOptionPane.showInputDialog("Enter coin value (a-5, b-10, y-20):");
+            if (input != null) {
+                switch (input) {
+                    case "a":
+                        totalCoins += 5;
+                        break;
+                    case "b":
+                        totalCoins += 10;
+                        break;
+                    case "y":
+                        totalCoins += 20;
+                        break;
+                    default:
+                        JOptionPane.showMessageDialog(null, "Invalid coin value.");
+                        break;
+                }
+                JOptionPane.showMessageDialog(null, "Total coins inserted: " + totalCoins);
             }
-        });
-
-        // Add components to JFrame
-        JPanel panel = new JPanel(new FlowLayout());
-        panel.add(messageLabel);
-        panel.add(inputField);
-        panel.add(submitButton);
-
-        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        this.setSize(400, 100);
-        this.setTitle("Vending Machine");
-        this.add(panel);
-        this.setVisible(true);
+        } else if (e.getSource() == dispenseItem) {
+            int totalCost = 0;
+            String items = "";
+            while (true) {
+                String input = JOptionPane.showInputDialog("Enter item code (N-napkin, K-knife, F-fork, S-spoon) or type 'done' to finish:");
+                if (input == null || input.equalsIgnoreCase("done")) {
+                    break;
+                }
+                switch (input) {
+                    case "N":
+                        if (napkins > 0) {
+                            totalCost += 10;
+                            items += "Napkin, ";
+                            napkins--;
+                        } else {
+                            JOptionPane.showMessageDialog(null, "Napkins out of stock.");
+                        }
+                        break;
+                    case "K":
+                        if (knives > 0) {
+                            totalCost += 25;
+                            items += "Knife, ";
+                            knives--;
+                        } else {
+                            JOptionPane.showMessageDialog(null, "Knives out of stock.");
+                        }
+                        break;
+                    case "F":
+                        if (forks > 0) {
+                            totalCost += 15;
+                            items += "Fork, ";
+                            forks--;
+                        } else {
+                            JOptionPane.showMessageDialog(null, "Forks out of stock.");
+                        }
+                        break;
+                    case "S":
+                        if (spoons > 0) {
+                            totalCost += 20;
+                                    items += "Spoon, ";
+                            spoons--;
+                        } else {
+                            JOptionPane.showMessageDialog(null, "Spoons out of stock.");
+                        }
+                        break;
+                    default:
+                        JOptionPane.showMessageDialog(null, "Invalid item code.");
+                        break;
+                }
+                             
+                // write transaction to file
+                try {
+                	String timeStamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
+                    FileWriter fw = new FileWriter("transactions.txt", true);
+                    fw.write(timeStamp + ": Dispensing - " + items.substring(0, items.length()-2) + "\n");
+                    fw.write(timeStamp + ": Total cost - $" + totalCost + "\n");
+                    fw.write(timeStamp + ": Total coins inserted - $" + totalCoins + "\n");
+                    fw.write(timeStamp + ": Change returned - $" + (totalCoins - totalCost) + "\n");
+                    fw.close();
+                } catch (IOException ex) {
+                    System.out.println("Error writing to file.");
+                }
+                // reset inventory and total coins
+                napkins = 20;
+                knives = 20;
+                forks = 20;
+                spoons = 20;
+                totalCoins = 0;
+            }
+            if (totalCost <= totalCoins && !items.equals("")) {
+                JOptionPane.showMessageDialog(null, "Dispensing: " + items.substring(0, items.length()-2));
+                totalCoins -= totalCost;
+                JOptionPane.showMessageDialog(null, "Change is being Dispensed: " + totalCoins);
+            } else if (items.equals("")) {
+                JOptionPane.showMessageDialog(null, "No items selected.");
+            } else {
+                JOptionPane.showMessageDialog(null, "Insufficient funds. Coins returned.");
+                totalCoins = 0;
+            }
+            
+        } else if (e.getSource() == showItems) {
+            itemsAvailable.setText("Available items:\n");
+            itemsAvailable.append("Napkin (N) - $" + 10 + " (" + napkins + " left)\n");
+            itemsAvailable.append("Knife (K) - $" + 25 + " (" + knives + " left)\n");
+            itemsAvailable.append("Fork (F) - $" + 15 + " (" + forks + " left)\n");
+            itemsAvailable.append("Spoon (S) - $" + 20 + " (" + spoons + " left)\n");
+        }
     }
 
     public static void main(String[] args) {
-        Application app = new Application();
+        new VendingMachineGUI();
     }
 }
