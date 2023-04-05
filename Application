@@ -138,12 +138,7 @@ public class VendingMachineGUI extends JFrame implements ActionListener {
                 } catch (IOException ex) {
                     System.out.println("Error writing to file.");
                 }
-                // reset inventory and total coins
-                napkins = 20;
-                knives = 20;
-                forks = 20;
-                spoons = 20;
-                totalCoins = 0;
+
             }
             if (totalCost <= totalCoins && !items.equals("")) {
                 JOptionPane.showMessageDialog(null, "Dispensing: " + items.substring(0, items.length()-2));
@@ -162,6 +157,71 @@ public class VendingMachineGUI extends JFrame implements ActionListener {
             itemsAvailable.append("Knife (K) - $" + 25 + " (" + knives + " left)\n");
             itemsAvailable.append("Fork (F) - $" + 15 + " (" + forks + " left)\n");
             itemsAvailable.append("Spoon (S) - $" + 20 + " (" + spoons + " left)\n");
+        }
+    }
+    
+    public void dispenseItems() {
+        int totalCost = 0;
+        String items = "";
+        while (true) {
+            String input = JOptionPane.showInputDialog("Enter item code (N-napkin, K-knife, F-fork, S-spoon) or type 'done' to finish:");
+            if (input == null || input.equalsIgnoreCase("done")) {
+                break;
+            }
+            switch (input) {
+                case "N":
+                    if (napkins > 0) {
+                        totalCost += 10;
+                        items += "Napkin, ";
+                        napkins--;
+                    } else {
+                        JOptionPane.showMessageDialog(null, "Napkins out of stock.");
+                    }
+                    break;
+                case "K":
+                    if (knives > 0) {
+                        totalCost += 25;
+                        items += "Knife, ";
+                        knives--;
+                    } else {
+                        JOptionPane.showMessageDialog(null, "Knives out of stock.");
+                    }
+                    break;
+                case "F":
+                    if (forks > 0) {
+                        totalCost += 15;
+                        items += "Fork, ";
+                        forks--;
+                    } else {
+                        JOptionPane.showMessageDialog(null, "Forks out of stock.");
+                    }
+                    break;
+                case "S":
+                    if (spoons > 0) {
+                        totalCost += 20;
+                        items += "Spoon, ";
+                        spoons--;
+                    } else {
+                        JOptionPane.showMessageDialog(null, "Spoons out of stock.");
+                    }
+                    break;
+                default:
+                    JOptionPane.showMessageDialog(null, "Invalid item code.");
+                    break;
+            }
+
+            // write transaction to file
+            try {
+                String timeStamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
+                FileWriter fw = new FileWriter("transactions.txt", true);
+                fw.write(timeStamp + ": Dispensing - " + items.substring(0, items.length()-2) + "\n");
+                fw.write(timeStamp + ": Total cost - $" + totalCost + "\n");
+                fw.write(timeStamp + ": Total coins inserted - $" + totalCoins + "\n");
+                fw.write(timeStamp + ": Change returned - $" + (totalCoins - totalCost) + "\n");
+                fw.close();
+            } catch (IOException ex) {
+                System.out.println("Error writing to file.");
+            }
         }
     }
 
