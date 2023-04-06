@@ -2,20 +2,25 @@ package main;
 
 import java.awt.*;
 import java.awt.event.*;
-import javax.swing.*;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 
+import javax.swing.*;
+
+@SuppressWarnings("serial")
 public class VendingMachineGUI extends JFrame implements ActionListener {
     private JLabel title;
-    private JButton insertCoin, dispenseItem, showItems, done;
+    private JButton insertString, dispenseItem, showItems;
     private JTextArea itemsAvailable;
     private int totalCoins = 0;
     private int napkins = 20, knives = 20, forks = 20, spoons = 20;
+    private Double totalSalesAmount;
+    private String outputDataFilePath;
 
     public VendingMachineGUI() {
         super("Vending Machine");
@@ -26,203 +31,211 @@ public class VendingMachineGUI extends JFrame implements ActionListener {
         title.setHorizontalAlignment(SwingConstants.CENTER);
         getContentPane().add(title, BorderLayout.NORTH);
 
-        insertCoin = new JButton("Insert Coin");
-        insertCoin.addActionListener(this);
+        insertString = new JButton("Input String");
+        insertString.addActionListener(this);
+        
         dispenseItem = new JButton("Dispense Item");
         dispenseItem.addActionListener(this);
-        showItems = new JButton("Show Available Items");
+        dispenseItem.setEnabled(false);
+        showItems = new JButton("Update Items");
         showItems.addActionListener(this);
 
         JPanel buttonsPanel = new JPanel(new GridLayout(1, 3));
-        buttonsPanel.add(insertCoin);
+        buttonsPanel.add(insertString);
         buttonsPanel.add(dispenseItem);
         buttonsPanel.add(showItems);
         getContentPane().add(buttonsPanel, BorderLayout.CENTER);
 
         itemsAvailable = new JTextArea(10, 20);
         itemsAvailable.setEditable(false);
+        itemsAvailable.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 0));
         JScrollPane scrollPane = new JScrollPane(itemsAvailable);
         getContentPane().add(scrollPane, BorderLayout.SOUTH);
         
-        done = new JButton("Done");
-        done.addActionListener(this);
-        done.setVisible(false);
-        getContentPane().add(done, BorderLayout.EAST);
+        this.totalSalesAmount = 0.00;
+        this.outputDataFilePath = "C:\\Users\\k3val\\Desktop\\backup\\TuringData.txt";
+        showAvailableItems();
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(400, 300);
         setVisible(true);
-        
-        
     }
-    
+
     public void actionPerformed(ActionEvent e) {
-        if (e.getSource() == insertCoin) {
-            String input = JOptionPane.showInputDialog("Enter coin value (a-5, b-10, y-20):");
-            if (input != null) {
-                switch (input) {
-                    case "a":
-                        totalCoins += 5;
-                        break;
-                    case "b":
-                        totalCoins += 10;
-                        break;
-                    case "y":
-                        totalCoins += 20;
-                        break;
-                    default:
-                        JOptionPane.showMessageDialog(null, "Invalid coin value.");
-                        break;
-                }
-                JOptionPane.showMessageDialog(null, "Total coins inserted: " + totalCoins);
-            }
-        } else if (e.getSource() == dispenseItem) {
+        if (e.getSource() == insertString) {
             int totalCost = 0;
             String items = "";
+            
             while (true) {
-                String input = JOptionPane.showInputDialog("Enter item code (N-napkin, K-knife, F-fork, S-spoon) or type 'done' to finish:");
-                if (input == null || input.equalsIgnoreCase("done")) {
+                String input = JOptionPane.showInputDialog("Enter Input String (N-napkin: $10, K-knife: $25, F-fork: 15, S-spoon: $20) or type 'done' to finish:"
+                		+ "\nCoin Values: (A: $5, B: $10, Y: $20)");
+                if (input == null || input.equalsIgnoreCase("done") || input.equalsIgnoreCase("D")) {
                     break;
                 }
-                switch (input) {
-                    case "N":
-                        if (napkins > 0) {
-                            totalCost += 10;
-                            items += "Napkin, ";
-                            napkins--;
-                        } else {
-                            JOptionPane.showMessageDialog(null, "Napkins out of stock.");
-                        }
-                        break;
-                    case "K":
-                        if (knives > 0) {
-                            totalCost += 25;
-                            items += "Knife, ";
-                            knives--;
-                        } else {
-                            JOptionPane.showMessageDialog(null, "Knives out of stock.");
-                        }
-                        break;
-                    case "F":
-                        if (forks > 0) {
-                            totalCost += 15;
-                            items += "Fork, ";
-                            forks--;
-                        } else {
-                            JOptionPane.showMessageDialog(null, "Forks out of stock.");
-                        }
-                        break;
-                    case "S":
-                        if (spoons > 0) {
-                            totalCost += 20;
-                                    items += "Spoon, ";
-                            spoons--;
-                        } else {
-                            JOptionPane.showMessageDialog(null, "Spoons out of stock.");
-                        }
-                        break;
-                    default:
-                        JOptionPane.showMessageDialog(null, "Invalid item code.");
-                        break;
+                
+                if (validateInputString(input)) {
+                	JOptionPane.showMessageDialog(null, "An Invalid Input String was Entered.");
+                	continue;
                 }
-                             
-                // write transaction to file
-                try {
-                	String timeStamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
-                    FileWriter fw = new FileWriter("transactions.txt", true);
-                    fw.write(timeStamp + ": Dispensing - " + items.substring(0, items.length()-2) + "\n");
-                    fw.write(timeStamp + ": Total cost - $" + totalCost + "\n");
-                    fw.write(timeStamp + ": Total coins inserted - $" + totalCoins + "\n");
-                    fw.write(timeStamp + ": Change returned - $" + (totalCoins - totalCost) + "\n");
-                    fw.close();
-                } catch (IOException ex) {
-                    System.out.println("Error writing to file.");
+                
+                input = input.toUpperCase();
+                System.out.println("Input: " + input);
+                
+                if("NKSFFSKS".equals(input)) {
+                	collectFundAndRestock();
+                	continue;
                 }
-
+                
+                ArrayList<String> strList = new ArrayList<String>(Arrays.asList(input.split("")));
+                
+                for (String s : strList) {
+	                switch (s) {
+		                case "A":
+		                    totalCoins += 5;
+		                    break;
+		                case "B":
+		                    totalCoins += 10;
+		                    break;
+		                case "Y":
+		                    totalCoins += 20;
+		                    break;
+	                    case "N":
+	                        if (napkins > 0) {
+	                        	if (totalCoins >= 10) {
+	                        		totalCost += 10;
+	                        		totalCoins -= 10;
+		                            items += "Napkin, ";
+		                            napkins--;
+	                        	}
+	                        } else {
+	                            JOptionPane.showMessageDialog(null, "Napkins out of stock.");
+	                        }
+	                        break;
+	                    case "K":
+	                        if (knives > 0) {
+	                        	if (totalCoins >= 25)
+	                        	{
+	                        		totalCost += 25;
+		                            totalCoins -= 25;
+		                            items += "Knife, ";
+		                            knives--;
+	                        	}
+	                        } else {
+	                            JOptionPane.showMessageDialog(null, "Knives out of stock.");
+	                        }
+	                        break;
+	                    case "F":
+	                        if (forks > 0) {
+	                        	if(totalCoins >= 15) {
+	                        		totalCost += 15;
+		                            totalCoins -= 15;
+		                            items += "Fork, ";
+		                            forks--;
+	                        	}
+	                        } else {
+	                            JOptionPane.showMessageDialog(null, "Forks out of stock.");
+	                        }
+	                        break;
+	                    case "S":
+	                        if (spoons > 0) {
+	                        	if(totalCoins >= 20) {
+	                        		totalCost += 20;
+		                            totalCoins -= 20;
+		                            items += "Spoon, ";
+		                            spoons--;
+	                        	}
+	                        } else {
+	                            JOptionPane.showMessageDialog(null, "Spoons out of stock.");
+	                        }
+	                        break;
+	                    default:
+	                        JOptionPane.showMessageDialog(null, "Invalid item code.");
+	                        break;
+	                }
+                }
             }
-            if (totalCost <= totalCoins && !items.equals("")) {
+            if (totalCoins >= 0 && totalCost > 0 && !items.equals("")) {
                 JOptionPane.showMessageDialog(null, "Dispensing: " + items.substring(0, items.length()-2));
-                totalCoins -= totalCost;
-                JOptionPane.showMessageDialog(null, "Change is being Dispensed: " + totalCoins);
+                JOptionPane.showMessageDialog(null, "Change Dispensing: " + totalCoins);
             } else if (items.equals("")) {
                 JOptionPane.showMessageDialog(null, "No items selected.");
             } else {
                 JOptionPane.showMessageDialog(null, "Insufficient funds. Coins returned.");
                 totalCoins = 0;
             }
-            
         } else if (e.getSource() == showItems) {
-            itemsAvailable.setText("Available items:\n");
-            itemsAvailable.append("Napkin (N) - $" + 10 + " (" + napkins + " left)\n");
-            itemsAvailable.append("Knife (K) - $" + 25 + " (" + knives + " left)\n");
-            itemsAvailable.append("Fork (F) - $" + 15 + " (" + forks + " left)\n");
-            itemsAvailable.append("Spoon (S) - $" + 20 + " (" + spoons + " left)\n");
+        	showAvailableItems();
         }
     }
     
-    public void dispenseItems() {
-        int totalCost = 0;
-        String items = "";
-        while (true) {
-            String input = JOptionPane.showInputDialog("Enter item code (N-napkin, K-knife, F-fork, S-spoon) or type 'done' to finish:");
-            if (input == null || input.equalsIgnoreCase("done")) {
-                break;
-            }
-            switch (input) {
-                case "N":
-                    if (napkins > 0) {
-                        totalCost += 10;
-                        items += "Napkin, ";
-                        napkins--;
-                    } else {
-                        JOptionPane.showMessageDialog(null, "Napkins out of stock.");
-                    }
-                    break;
-                case "K":
-                    if (knives > 0) {
-                        totalCost += 25;
-                        items += "Knife, ";
-                        knives--;
-                    } else {
-                        JOptionPane.showMessageDialog(null, "Knives out of stock.");
-                    }
-                    break;
-                case "F":
-                    if (forks > 0) {
-                        totalCost += 15;
-                        items += "Fork, ";
-                        forks--;
-                    } else {
-                        JOptionPane.showMessageDialog(null, "Forks out of stock.");
-                    }
-                    break;
-                case "S":
-                    if (spoons > 0) {
-                        totalCost += 20;
-                        items += "Spoon, ";
-                        spoons--;
-                    } else {
-                        JOptionPane.showMessageDialog(null, "Spoons out of stock.");
-                    }
-                    break;
-                default:
-                    JOptionPane.showMessageDialog(null, "Invalid item code.");
-                    break;
-            }
-
-            // write transaction to file
-            try {
-                String timeStamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
-                FileWriter fw = new FileWriter("transactions.txt", true);
-                fw.write(timeStamp + ": Dispensing - " + items.substring(0, items.length()-2) + "\n");
-                fw.write(timeStamp + ": Total cost - $" + totalCost + "\n");
-                fw.write(timeStamp + ": Total coins inserted - $" + totalCoins + "\n");
-                fw.write(timeStamp + ": Change returned - $" + (totalCoins - totalCost) + "\n");
-                fw.close();
-            } catch (IOException ex) {
-                System.out.println("Error writing to file.");
-            }
-        }
+    public void showAvailableItems() {
+    	itemsAvailable.setText("Available items:\n");
+        itemsAvailable.append("Napkin (N) - $" + 10 + " (" + napkins + " left)\n");
+        itemsAvailable.append("Knife (K) - $" + 25 + " (" + knives + " left)\n");
+        itemsAvailable.append("Fork (F) - $" + 15 + " (" + forks + " left)\n");
+        itemsAvailable.append("Spoon (S) - $" + 20 + " (" + spoons + " left)\n");
+    }
+    
+    public void writeDataToFile(){
+    	File f = new File(outputDataFilePath);
+    	
+    	if(!f.exists() && !f.isDirectory()) {
+    		createDataFile();
+    	}
+    	
+    	try {
+			FileWriter myWriter = new FileWriter(outputDataFilePath, true);
+			
+			SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");  
+		    Date date = new Date();
+		    String currentDateTime = formatter.format(date);
+		    
+		    String stocklist = "N: " + String.valueOf(napkins) + ", K: " + String.valueOf(knives)
+		    				   + ", F: " + String.valueOf(forks) + ", S: " + String.valueOf(spoons) ;
+		    
+			myWriter.write("Date: " + currentDateTime + "\n");
+			myWriter.write("Sales Amount $: " + totalSalesAmount.toString() + "\n");
+			myWriter.write("Stock List: " + stocklist + "\n\n");
+			
+			myWriter.close();
+			System.out.println("Successfully wrote to the file.");
+	    } catch (IOException e) {
+	      System.out.println("An error occurred.");
+	      e.printStackTrace();
+	    }
+    }
+    
+    public void createDataFile() {
+    	try {
+    		File f = new File(outputDataFilePath);
+    		if (f.createNewFile()) {
+    			System.out.println("File created: " + f.getName());
+    		} else {
+    			System.out.println("File already exists.");
+    		}
+	    } catch (IOException e) {
+	      System.out.println("An error occurred while creating the file.");
+	      e.printStackTrace();
+	    }
+    }
+    
+    public boolean validateInputString(String inputStr) {
+    	boolean isValid = false;
+    	
+    	return isValid;
+    }
+    
+    public void collectFundAndRestock() {
+    	System.out.println("Collecting funds and restocking items.");
+    	restockAllItems();
+    	writeDataToFile();
+    }
+    
+    public void restockAllItems() {
+    	this.napkins = 20;
+    	this.knives = 20;
+    	this.forks = 20;
+    	this.spoons = 20;
     }
 
     public static void main(String[] args) {
